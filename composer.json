@@ -5,6 +5,7 @@
     "keywords": ["laravel-admin", "extension"],
     "homepage": "https://github.com/tolgatasci/latlong",
     "license": "MIT",
+    "minimum-stability": "master",
     "authors": [
         {
             "name": "z-song",
