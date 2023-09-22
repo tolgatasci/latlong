@@ -22,7 +22,7 @@ class LatlongServiceProvider extends ServiceProvider
 
         Admin::booting(function () {
             Form::extend('latlong', Latlong::class);
-            Show\Field::macro('latlong', Extension::showField());
+            Show\Field::macro('harita', Extension::showField());
         });
     }
 }
