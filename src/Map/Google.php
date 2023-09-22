@@ -18,23 +18,30 @@ class Google extends AbstractMap
         return <<<EOT
         (function() {
             function init(name) {
-                var lat = $('#{$id['lat']}');
-                var lng = $('#{$id['lng']}');
-    
-                var LatLng = new google.maps.LatLng(lat.val(), lng.val());
-    
+                var lat = null;
+                var lng = null;
+                var locations = [];
+                for(var i = 0; i < maps_list.length; i++)
+                {
+
+                    locations.push([maps_list[i]['action_name'], maps_list[i]['lat'], maps_list[i]['long'], i,maps_list[i]['order_name']])
+
+                }
+
+                var LatLng = new google.maps.LatLng(maps_list[0]['lat'], maps_list[0]['long']);
+
                 var options = {
-                    zoom: {$this->getParams('zoom')},
+                    zoom: 11,
                     center: LatLng,
                     panControl: false,
                     zoomControl: true,
                     scaleControl: true,
                     mapTypeId: google.maps.MapTypeId.ROADMAP
                 }
-    
+                var flightPlanCoordinates = [];
                 var container = document.getElementById("map_"+name);
                 var map = new google.maps.Map(container, options);
-                
+
                 if (navigator.geolocation && {$autoPosition}) {
                   navigator.geolocation.getCurrentPosition(function(position) {
                     var pos = {
@@ -43,32 +50,61 @@ class Google extends AbstractMap
                     };
                     map.setCenter(pos);
                     marker.setPosition(pos);
-                    
+
                     lat.val(position.coords.latitude);
                     lng.val(position.coords.longitude);
-                    
+
                   }, function() {
-                    
+
                   });
                 }
-            
-                var marker = new google.maps.Marker({
-                    position: LatLng,
-                    map: map,
-                    title: 'Drag Me!',
-                    draggable: true
-                });
+ var infowindow = new google.maps.InfoWindow();
+              var marker, i;
+    var bounds = new google.maps.LatLngBounds();
 
-                google.maps.event.addListener(marker, "position_changed", function(event) {
-                  var position = marker.getPosition();
-                  
-                   lat.val(position.lat());
-                   lng.val(position.lng());
-                });
+    var mIcon = {
+      path: google.maps.SymbolPath.CIRCLE,
+      fillOpacity: 1,
+      fillColor: '#fff',
+      strokeOpacity: 1,
+      strokeWeight: 1,
+      strokeColor: '#333',
+      scale: 12
+    };
+    for (i = 0; i < locations.length; i++) {
 
-                google.maps.event.addListener(map, 'click', function(event) {
-                    marker.setPosition(event.latLng);
-                });
+      marker = new google.maps.Marker({
+        position: new google.maps.LatLng(locations[i][1], locations[i][2]),
+        map: map,
+        title: locations[i][4],
+        icon: mIcon,
+        label: {color: '#000000', fontSize: '12px', fontWeight: '600',
+            text: (i+1) + ""}
+      });
+      flightPlanCoordinates.push(marker.getPosition());
+      bounds.extend(marker.position);
+      google.maps.event.addListener(marker, 'click', (function(marker, i) {
+        return function() {
+
+          let name = "";
+          if(name != locations[i][4]){
+          name = locations[i][4];
+          }
+          infowindow.setContent("<h4>"+name+"</h4><p>"+locations[i][0]+"</p>");
+          infowindow.open(map, marker);
+        }
+      })(marker, i));
+    }
+
+    map.fitBounds(bounds);
+
+    var flightPath = new google.maps.Polyline({
+      map: map,
+      path: flightPlanCoordinates,
+      strokeColor: "#FF0000",
+      strokeOpacity: 1.0,
+      strokeWeight: 2
+    });
 
                 var autocomplete = new google.maps.places.Autocomplete(
                     document.getElementById("search-{$id['lat']}{$id['lng']}")
@@ -78,7 +114,7 @@ class Google extends AbstractMap
                 google.maps.event.addListener(autocomplete, 'place_changed', function() {
                     var place = autocomplete.getPlace();
                     var location = place.geometry.location;
-                    
+
                     if (place.geometry.viewport) {
                       map.fitBounds(place.geometry.viewport);
                     } else {
